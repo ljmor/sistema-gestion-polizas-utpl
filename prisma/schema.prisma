@@ -1,0 +1,292 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Enums
+enum Role {
+  GESTOR
+  FINANZAS
+  ASEGURADORA
+  ADMIN
+}
+
+enum PolizaTipo {
+  VIDA
+  ACCIDENTES
+  SALUD
+  OTRO
+}
+
+enum PolizaEstado {
+  ACTIVA
+  INACTIVA
+}
+
+enum VigenciaEstado {
+  ABIERTA
+  CERRADA
+}
+
+enum PolizaPagoEstado {
+  PENDIENTE
+  PAGADO
+}
+
+enum SiniestroTipo {
+  NATURAL
+  ACCIDENTE
+  DESCONOCIDO
+}
+
+enum SiniestroEstado {
+  RECIBIDO
+  EN_VALIDACION
+  BENEFICIARIOS
+  LIQUIDACION
+  PAGO
+  CERRADO
+  INVALIDO
+}
+
+enum DocumentoEstado {
+  PENDIENTE
+  RECIBIDO
+  RECHAZADO
+}
+
+enum FirmaEstado {
+  PENDIENTE
+  RECIBIDA
+}
+
+enum LiquidacionEstado {
+  ENVIADA
+  OBSERVADA
+  APROBADA
+}
+
+enum SiniestroPagoEstado {
+  PENDIENTE
+  EJECUTADO
+}
+
+enum AlertaTipo {
+  PLAZO_60D
+  PLAZO_15D
+  PLAZO_72H
+  VENCIMIENTO_POLIZA
+  PAGO_POLIZA
+}
+
+enum AlertaSeveridad {
+  INFO
+  WARNING
+  CRITICAL
+}
+
+enum AlertaRefType {
+  SINIESTRO
+  POLIZA
+}
+
+// Models
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  role         Role
+  name         String
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Poliza {
+  id             String       @id @default(uuid())
+  codigo         String       @unique
+  nombre         String
+  tipo           PolizaTipo
+  prima          Decimal
+  montoCobertura Decimal?     // Monto de cobertura por fallecimiento
+  moneda         String       @default("USD")
+  descripcion    String?
+  estado         PolizaEstado
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  vigencias  PolizaVigencia[]
+  pagos      PolizaPago[]
+  siniestros Siniestro[]
+}
+
+model PolizaVigencia {
+  id         String         @id @default(uuid())
+  polizaId   String
+  desde      DateTime
+  hasta      DateTime
+  estado     VigenciaEstado
+  configJson Json? // JSONB: reglas/copagos/beneficios
+
+  poliza Poliza @relation(fields: [polizaId], references: [id])
+}
+
+model PolizaPago {
+  id            String           @id @default(uuid())
+  polizaId      String
+  fecha         DateTime
+  monto         Decimal
+  estado        PolizaPagoEstado
+  facturaFileId String? // Relación a File opcional
+
+  poliza  Poliza @relation(fields: [polizaId], references: [id])
+  factura File?  @relation(fields: [facturaFileId], references: [id])
+}
+
+model Siniestro {
+  id                  String          @id @default(uuid())
+  caseCode            String          @unique // E.g., SIN-2026-000123
+  tipo                SiniestroTipo
+  estado              SiniestroEstado
+  fechaDefuncion      DateTime?
+  observaciones       String?
+  grupoAsegurado      String?  // ESTUDIANTES_PRESENCIAL, ESTUDIANTES_DISTANCIA, etc.
+  fallecidoNombre     String?
+  fallecidoCedula     String?
+  reportanteNombre    String?
+  reportanteRelacion  String?
+  reportanteEmail     String?
+  reportanteTelefono  String?
+  motivoInvalidacion  String?  // Motivo si se marca como inválido
+  
+  // Relaciones opcionales (nullable)
+  polizaId          String?
+  polizaVigenciaId  String?
+  assignedToUserId  String?
+
+  // Relación con Póliza
+  poliza Poliza? @relation(fields: [polizaId], references: [id])
+
+  // Fechas de control
+  fechaReporte          DateTime  @default(now())
+  fechaEnvioAseguradora DateTime?
+  fechaFirmaRecibida    DateTime?
+  fechaLiquidacion      DateTime?
+  fechaPago             DateTime?
+  fechaCierre           DateTime?
+  
+  updatedAt DateTime @updatedAt
+
+  // Relaciones
+  documentos    Documento[]
+  beneficiarios Beneficiario[]
+  liquidacion   Liquidacion?
+  pago          Pago?
+}
+
+model Documento {
+  id            String          @id @default(uuid())
+  siniestroId   String
+  tipo          String // Enum ver checklist en código/config
+  estado        DocumentoEstado
+  motivoRechazo String?
+  fileId        String?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  siniestro Siniestro @relation(fields: [siniestroId], references: [id])
+  file      File?     @relation(fields: [fileId], references: [id])
+}
+
+model Beneficiario {
+  id           String      @id @default(uuid())
+  siniestroId  String
+  nombre       String
+  cedula       String
+  relacion     String
+  porcentaje   Decimal
+  banco        String?
+  cuenta       String?
+  email        String?     // Email para contactar al beneficiario
+  telefono     String?
+  estadoFirma  FirmaEstado @default(PENDIENTE)
+  firmaFileId  String?
+  archivoFirma String?     // Ruta del archivo de firma
+
+  siniestro Siniestro @relation(fields: [siniestroId], references: [id])
+  firma     File?     @relation(fields: [firmaFileId], references: [id])
+}
+
+model Liquidacion {
+  id                    String            @id @default(uuid())
+  siniestroId           String            @unique
+  montoLiquidado        Decimal
+  notasAseguradora      String?
+  liquidacionFileId     String?
+  estado                LiquidacionEstado
+  fechaEnvioAseguradora DateTime?         // Fecha cuando se envió a la aseguradora
+  fechaLiquidacion      DateTime?         // Fecha de la liquidación (respuesta de aseguradora)
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+
+  siniestro   Siniestro @relation(fields: [siniestroId], references: [id])
+  liquidacion File?     @relation(fields: [liquidacionFileId], references: [id])
+}
+
+model Pago {
+  id                String              @id @default(uuid())
+  siniestroId       String              @unique
+  estado            SiniestroPagoEstado
+  docContable       String?
+  obsFinanzas       String?
+  comprobanteFileId String?
+  fechaPago         DateTime?
+
+  siniestro   Siniestro @relation(fields: [siniestroId], references: [id])
+  comprobante File?     @relation(fields: [comprobanteFileId], references: [id])
+}
+
+model File {
+  id           String   @id @default(uuid())
+  bucket       String
+  path         String
+  originalName String
+  mimeType     String
+  size         Int
+  checksum     String?
+  createdAt    DateTime @default(now())
+
+  // Relaciones inversas (para integridad referencial si se desea, o opcional)
+  polizaPagos     PolizaPago[]
+  documentos      Documento[]
+  beneficiarios   Beneficiario[]
+  liquidaciones   Liquidacion[]
+  pagos           Pago[]
+}
+
+model AuditEvent {
+  id          String   @id @default(uuid())
+  entity      String // SINIESTRO, POLIZA, etc.
+  entityId    String
+  action      String
+  meta        Json // JSONB
+  actorUserId String?
+  createdAt   DateTime @default(now())
+}
+
+model Alerta {
+  id          String          @id @default(uuid())
+  tipo        AlertaTipo
+  severidad   AlertaSeveridad
+  mensaje     String
+  refType     AlertaRefType
+  refId       String
+  fechaLimite DateTime
+  isResolved  Boolean         @default(false)
+  createdAt   DateTime        @default(now())
+}
