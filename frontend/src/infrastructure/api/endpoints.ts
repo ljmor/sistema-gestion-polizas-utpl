@@ -1,0 +1,60 @@
+export const endpoints = {
+  auth: {
+    login: '/auth/login',
+    logout: '/auth/logout',
+    me: '/auth/me',
+    forgotPassword: '/auth/forgot-password',
+  },
+  public: {
+    createSiniestro: '/public/siniestros',
+  },
+  siniestros: {
+    list: '/siniestros',
+    detail: (id: string) => `/siniestros/${id}`,
+    update: (id: string) => `/siniestros/${id}`,
+    documentos: (id: string) => `/siniestros/${id}/documentos`,
+    documento: (id: string, docId: string) => `/siniestros/${id}/documentos/${docId}`,
+    beneficiarios: (id: string) => `/siniestros/${id}/beneficiarios`,
+    beneficiario: (id: string, benId: string) => `/siniestros/${id}/beneficiarios/${benId}`,
+    liquidacion: (id: string) => `/siniestros/${id}/liquidacion`,
+    pago: (id: string) => `/siniestros/${id}/pago`,
+    // Nuevos endpoints
+    marcarInvalido: (id: string) => `/siniestros/${id}/marcar-invalido`,
+    enviarAseguradora: (id: string) => `/siniestros/${id}/enviar-aseguradora`,
+    solicitarDocsBeneficiarios: (id: string) => `/siniestros/${id}/solicitar-documentos-beneficiarios`,
+    enviarLiquidacionBeneficiarios: (id: string) => `/siniestros/${id}/enviar-liquidacion-beneficiarios`,
+    registrarPago: (id: string) => `/siniestros/${id}/registrar-pago`,
+    aseguradoraConfig: '/siniestros/config/aseguradora',
+  },
+  polizas: {
+    list: '/polizas',
+    detail: (id: string) => `/polizas/${id}`,
+    vigencias: (id: string) => `/polizas/${id}/vigencias`,
+    cerrarVigencia: (id: string, vigenciaId: string) => `/polizas/${id}/vigencias/${vigenciaId}/cerrar`,
+    pagos: (id: string) => `/polizas/${id}/pagos`,
+  },
+  alertas: {
+    list: '/alertas',
+    unresolved: '/alertas/unresolved',
+    counts: '/alertas/counts',
+    resolver: (id: string) => `/alertas/${id}/resolver`,
+    marcarLeida: (id: string) => `/alertas/${id}/leida`,
+  },
+  files: {
+    upload: '/files/upload',
+    download: (id: string) => `/files/${id}/download`,
+    info: (id: string) => `/files/${id}`,
+  },
+  reportes: {
+    siniestralidad: '/reportes/siniestralidad',
+    poblacion: '/reportes/poblacion',
+    costos: '/reportes/costos',
+    estadoSiniestros: '/reportes/estado-siniestros',
+  },
+  dashboard: {
+    kpis: '/dashboard/kpis',
+    casosRecientes: '/dashboard/casos-recientes',
+    alertasCriticas: '/dashboard/alertas-criticas',
+    estadisticasReportes: '/dashboard/estadisticas-reportes',
+  },
+};
