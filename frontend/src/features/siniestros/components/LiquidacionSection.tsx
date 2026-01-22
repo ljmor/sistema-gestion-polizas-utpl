@@ -12,7 +12,7 @@ import {
   Alert,
   CircularProgress,
 } from '@mui/material';
-import { Send, Upload, CloudDownload, ArrowForward, Email, CheckCircle, Visibility, Download, Lock } from '@mui/icons-material';
+import { Send, Upload, ArrowForward, Email, CheckCircle, Visibility, Download, Lock } from '@mui/icons-material';
 import { useForm } from 'react-hook-form';
 import { useSnackbar } from 'notistack';
 import { Siniestro } from '../../../domain/types/siniestro';
@@ -20,7 +20,6 @@ import { EstadoLiquidacion } from '../../../domain/enums/estados';
 import { FileDropzone } from '../../../shared/components/FileDropzone';
 import { 
   useRegistrarLiquidacion, 
-  useUpdateSiniestro,
   useEnviarExpedienteAseguradora,
   useAseguradoraConfig,
   useEnviarLiquidacionBeneficiarios,
@@ -57,7 +56,6 @@ export const LiquidacionSection = ({ siniestro }: LiquidacionSectionProps) => {
   const [liquidacionFile, setLiquidacionFile] = useState<File[]>([]);
 
   const registrarLiquidacion = useRegistrarLiquidacion();
-  const updateSiniestro = useUpdateSiniestro();
   const enviarExpediente = useEnviarExpedienteAseguradora();
   const enviarLiquidacion = useEnviarLiquidacionBeneficiarios();
   const { data: aseguradoraConfig, isLoading: loadingConfig } = useAseguradoraConfig();

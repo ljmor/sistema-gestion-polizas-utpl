@@ -8,23 +8,15 @@ import {
   Button,
   Chip,
   Divider,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
 } from '@mui/material';
-import { ArrowBack, Add, CalendarMonth } from '@mui/icons-material';
+import { ArrowBack } from '@mui/icons-material';
 import { PageHeader } from '../../../shared/components/PageHeader';
 import { LoadingState } from '../../../shared/components/LoadingState';
 import { usePoliza } from '../../../infrastructure/queries/polizas.queries';
-import { Poliza, PagoPoliza, Vigencia } from '../../../domain/types/poliza';
+import { Poliza } from '../../../domain/types/poliza';
 import { TipoPoliza, EstadoPoliza } from '../../../domain/enums/estados';
-import { formatDate } from '../../../shared/utils/dates';
 import { formatCurrency } from '../../../infrastructure/api/mappers';
 import { PolizaVigenciaCard } from '../components/PolizaVigenciaCard';
-import { PolizaPagosTable } from '../components/PolizaPagosTable';
 
 export const PolizaDetailPage = () => {
   const { id } = useParams<{ id: string }>();

@@ -28,7 +28,6 @@ type ForgotPasswordForm = z.infer<typeof forgotPasswordSchema>;
 export const ForgotPasswordPage = () => {
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   const {
     register,
@@ -40,11 +39,10 @@ export const ForgotPasswordPage = () => {
 
   const onSubmit = async (data: ForgotPasswordForm) => {
     setLoading(true);
-    setError(null);
     try {
       await httpClient.post('/auth/forgot-password', { email: data.email });
       setSubmitted(true);
-    } catch (err: any) {
+    } catch {
       // Por seguridad, siempre mostramos éxito aunque el email no exista
       setSubmitted(true);
     } finally {

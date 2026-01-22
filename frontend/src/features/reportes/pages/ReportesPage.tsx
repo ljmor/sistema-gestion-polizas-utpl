@@ -5,8 +5,6 @@ import {
   Tabs,
   Tab,
   Box,
-  TextField,
-  MenuItem,
   Button,
   Grid,
   Typography,
@@ -62,6 +60,38 @@ const ESTADO_COLORS: Record<string, string> = {
   'Inválido': '#EF9A9A',
 };
 
+// Componente StatCard movido fuera del componente principal
+interface StatCardProps {
+  icon: React.ReactNode;
+  title: string;
+  value: string | number;
+  subvalue?: string;
+  color: string;
+}
+
+const StatCard = ({ icon, title, value, subvalue, color }: StatCardProps) => (
+  <Card sx={{ height: '100%' }}>
+    <CardContent>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+        <Box sx={{ 
+          p: 1, 
+          borderRadius: 2, 
+          bgcolor: `${color}20`,
+          color: color,
+          display: 'flex',
+        }}>
+          {icon}
+        </Box>
+        <Typography variant="body2" color="text.secondary">{title}</Typography>
+      </Box>
+      <Typography variant="h4" fontWeight={700} color={color}>{value}</Typography>
+      {subvalue && (
+        <Typography variant="caption" color="text.secondary">{subvalue}</Typography>
+      )}
+    </CardContent>
+  </Card>
+);
+
 export const ReportesPage = () => {
   const theme = useTheme();
   const [tabValue, setTabValue] = useState(0);
@@ -93,35 +123,6 @@ export const ReportesPage = () => {
   const handleExport = (data: Record<string, unknown>[], filename: string) => {
     exportToCSV(data, filename);
   };
-
-  const StatCard = ({ icon, title, value, subvalue, color }: { 
-    icon: React.ReactNode; 
-    title: string; 
-    value: string | number; 
-    subvalue?: string;
-    color: string;
-  }) => (
-    <Card sx={{ height: '100%' }}>
-      <CardContent>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-          <Box sx={{ 
-            p: 1, 
-            borderRadius: 2, 
-            bgcolor: `${color}20`,
-            color: color,
-            display: 'flex',
-          }}>
-            {icon}
-          </Box>
-          <Typography variant="body2" color="text.secondary">{title}</Typography>
-        </Box>
-        <Typography variant="h4" fontWeight={700} color={color}>{value}</Typography>
-        {subvalue && (
-          <Typography variant="caption" color="text.secondary">{subvalue}</Typography>
-        )}
-      </CardContent>
-    </Card>
-  );
 
   if (isLoading) {
     return (
@@ -400,7 +401,7 @@ export const ReportesPage = () => {
                 <Button
                   variant="outlined"
                   startIcon={<Download />}
-                  onClick={() => handleExport(estadisticas.relacionPolizaSiniestros as any, 'reporte-costos')}
+                  onClick={() => handleExport(estadisticas.relacionPolizaSiniestros as Record<string, unknown>[], 'reporte-costos')}
                   disabled={estadisticas.relacionPolizaSiniestros.length === 0}
                 >
                   Exportar CSV
@@ -417,7 +418,7 @@ export const ReportesPage = () => {
             <Button
               variant="outlined"
               startIcon={<Download />}
-              onClick={() => handleExport(estadisticas.estadoSiniestros as any, 'reporte-estado-siniestros')}
+              onClick={() => handleExport(estadisticas.estadoSiniestros as Record<string, unknown>[], 'reporte-estado-siniestros')}
               disabled={estadisticas.estadoSiniestros.length === 0}
             >
               Exportar CSV

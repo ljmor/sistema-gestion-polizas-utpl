@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React from 'react';
 import {
   Card,
   Table,
@@ -14,7 +14,7 @@ import {
   Avatar,
   Typography,
 } from '@mui/material';
-import { Add, Edit, Delete, Block } from '@mui/icons-material';
+import { Add, Edit, Block } from '@mui/icons-material';
 import { PageHeader } from '../../../shared/components/PageHeader';
 import { Role, roleLabels } from '../../../domain/enums/roles';
 

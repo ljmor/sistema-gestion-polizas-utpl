@@ -139,7 +139,7 @@ export const setupMockAdapter = () => {
   });
 
   // Detail
-  mock.onGet(new RegExp(`^${endpoints.siniestros.list}/\d+$`)).reply(config => {
+  mock.onGet(new RegExp(`^${endpoints.siniestros.list}/\\d+$`)).reply(config => {
       // Extract ID from URL
       const id = config.url?.split('/').pop() || '1';
       return [200, {

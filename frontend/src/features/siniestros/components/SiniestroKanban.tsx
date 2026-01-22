@@ -1,4 +1,4 @@
-import { Box, Paper, Typography, Card, CardContent, Chip, Avatar } from '@mui/material';
+import { Box, Paper, Typography, Card, CardContent, Chip } from '@mui/material';
 import { SiniestroListItem } from '../../../domain/types/siniestro';
 import { EstadoSiniestro, estadoSiniestroLabels } from '../../../domain/enums/estados';
 import { formatDate } from '../../../shared/utils/dates';

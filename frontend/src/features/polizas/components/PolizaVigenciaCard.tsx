@@ -58,7 +58,7 @@ export const PolizaVigenciaCard = ({
       setOpenNueva(false);
       setDesde('');
       setHasta('');
-    } catch (error) {
+    } catch {
       enqueueSnackbar('Error al crear vigencia', { variant: 'error' });
     }
   };
@@ -72,7 +72,7 @@ export const PolizaVigenciaCard = ({
         vigenciaId: vigenciaActual.id,
       });
       enqueueSnackbar('Vigencia cerrada correctamente', { variant: 'success' });
-    } catch (error) {
+    } catch {
       enqueueSnackbar('Error al cerrar vigencia', { variant: 'error' });
     }
   };

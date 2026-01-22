@@ -1,12 +1,23 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { PublicController } from './public.controller';
+import { PublicService } from './public.service';
 
 describe('PublicController', () => {
   let controller: PublicController;
 
+  const mockPublicService = {
+    createReport: jest.fn(),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [PublicController],
+      providers: [
+        {
+          provide: PublicService,
+          useValue: mockPublicService,
+        },
+      ],
     }).compile();
 
     controller = module.get<PublicController>(PublicController);

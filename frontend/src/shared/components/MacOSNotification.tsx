@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { Box, Paper, Typography, IconButton, Slide, Stack } from '@mui/material';
 import { Close, Warning, Error as ErrorIcon, Info, NotificationsActive } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -16,7 +16,6 @@ export interface AppNotification {
 interface MacOSNotificationProps {
   notification: AppNotification;
   onClose: (id: string) => void;
-  index: number;
 }
 
 const severityConfig = {
@@ -42,7 +41,7 @@ const severityConfig = {
   },
 };
 
-const MacOSNotification = ({ notification, onClose, index }: MacOSNotificationProps) => {
+const MacOSNotification = ({ notification, onClose }: MacOSNotificationProps) => {
   const [isVisible, setIsVisible] = useState(true);
   const config = severityConfig[notification.severity];
 
@@ -225,12 +224,11 @@ export const NotificationContainer = ({ notifications, onClose }: NotificationCo
     >
       <AnimatePresence>
         <Stack spacing={1}>
-          {notifications.slice(0, 5).map((notification, index) => (
+          {notifications.slice(0, 5).map((notification) => (
             <MacOSNotification
               key={notification.id}
               notification={notification}
               onClose={onClose}
-              index={index}
             />
           ))}
         </Stack>

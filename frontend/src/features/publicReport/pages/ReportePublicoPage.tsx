@@ -10,7 +10,6 @@ import {
   Grid,
   MenuItem,
   Alert,
-  Divider,
 } from '@mui/material';
 import { Send, Upload, Description, Delete } from '@mui/icons-material';
 import { useForm, Controller } from 'react-hook-form';
@@ -77,7 +76,7 @@ export const ReportePublicoPage = () => {
     try {
       // Convertir archivos por tipo a array con metadata
       const archivosConTipo = Object.entries(archivosPorTipo)
-        .filter(([_, file]) => file !== null)
+        .filter(([, file]) => file !== null)
         .map(([tipo, file]) => ({ tipo, file: file! }));
 
       const result = await createReporte.mutateAsync({

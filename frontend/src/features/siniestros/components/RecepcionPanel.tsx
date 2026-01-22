@@ -70,7 +70,7 @@ export const RecepcionPanel = ({ siniestro, readOnly = false }: RecepcionPanelPr
     ? new Date(fechaDefuncionRaw).toISOString().split('T')[0]
     : '';
 
-  const { control, handleSubmit, register, setValue, watch, reset } = useForm<RecepcionForm>({
+  const { control, handleSubmit, register, watch, reset } = useForm<RecepcionForm>({
     defaultValues: {
       tipo: siniestro.tipo,
       polizaId: siniestro.polizaId || '',

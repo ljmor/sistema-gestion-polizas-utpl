@@ -5,8 +5,6 @@ import { User, LoginCredentials, AuthResponse } from '../../domain/types/auth';
 import { useAuthStore } from '../../application/services/authStore';
 
 export const useLogin = () => {
-  const setAuth = useAuthStore((state) => state.login);
-
   return useMutation({
     mutationFn: async (credentials: LoginCredentials) => {
       const response = await httpClient.post<AuthResponse>(

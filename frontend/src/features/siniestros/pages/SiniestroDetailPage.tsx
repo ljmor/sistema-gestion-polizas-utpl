@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Grid,
@@ -10,9 +10,6 @@ import {
   Tab,
   Button,
   Chip,
-  List,
-  ListItem,
-  ListItemText,
   Divider,
   Alert,
   Dialog,
@@ -108,18 +105,31 @@ export const SiniestroDetailPage = () => {
   };
 
   const displayData = siniestro || mockSiniestro;
-  const [activeTab, setActiveTab] = useState(0); // Iniciar en Recepción
-  const [reopenDialogOpen, setReopenDialogOpen] = useState(false);
-  const [initialTabSet, setInitialTabSet] = useState(false);
-
-  // Actualizar tab SOLO la primera vez que se cargan los datos
-  // NO cambiar automáticamente después (el usuario controla la navegación)
-  useEffect(() => {
-    if (siniestro && !initialTabSet) {
-      setActiveTab(stepToTab[siniestro.estado]);
-      setInitialTabSet(true);
+  const initialTabRef = useRef(false);
+  
+  // Calcular el tab inicial basado en el estado del siniestro
+  const getInitialTab = () => {
+    if (siniestro && !initialTabRef.current) {
+      initialTabRef.current = true;
+      return stepToTab[siniestro.estado];
     }
-  }, [siniestro, initialTabSet]);
+    return 0;
+  };
+  
+  const [activeTab, setActiveTab] = useState(getInitialTab);
+  const [reopenDialogOpen, setReopenDialogOpen] = useState(false);
+
+  // Actualizar tab cuando cambia el siniestro (solo si no se había cargado antes)
+  useEffect(() => {
+    if (siniestro && !initialTabRef.current) {
+      initialTabRef.current = true;
+      // Usar setTimeout para evitar el warning de setState síncrono
+      const timer = setTimeout(() => {
+        setActiveTab(stepToTab[siniestro.estado]);
+      }, 0);
+      return () => clearTimeout(timer);
+    }
+  }, [siniestro]);
 
   if (isLoading) {
     return <LoadingState message="Cargando caso..." />;
@@ -148,9 +158,6 @@ export const SiniestroDetailPage = () => {
   // Verificar si todas las firmas de beneficiarios están recibidas
   const allFirmasRecibidas = displayData.beneficiarios?.length > 0 &&
     displayData.beneficiarios.every(b => b.estadoFirma === EstadoFirma.RECIBIDA);
-  
-  // La liquidación está aprobada
-  const liquidacionAprobada = displayData.liquidacion?.estado === EstadoLiquidacion.APROBADO;
   
   // Verificar si ya se envió a beneficiarios (el estado cambia a PAGO después de enviar)
   const yaEnviadoABeneficiarios = displayData.estado === EstadoSiniestro.PAGO || 

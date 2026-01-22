@@ -63,7 +63,6 @@ const ClosedCaseMessage = () => (
 export const SiniestroStepPanel = ({ step, siniestro }: SiniestroStepPanelProps) => {
   const isInvalid = siniestro.estado === EstadoSiniestro.INVALIDO;
   const isClosed = siniestro.estado === EstadoSiniestro.CERRADO;
-  const isLocked = isInvalid || isClosed;
 
   const renderPanel = () => {
     // Si el caso está inválido, solo mostrar el panel de recepción con el mensaje

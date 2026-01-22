@@ -26,7 +26,8 @@ export const SiniestrosFilters = ({
 }: SiniestrosFiltersProps) => {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [searchTerm, setSearchTerm] = useState(filters.search || '');
-  const debouncedSearch = useDebounce(searchTerm, 300);
+  // Debounce para búsqueda (el valor se usa internamente en el hook)
+  useDebounce(searchTerm, 300);
 
   const handleSearchChange = (value: string) => {
     setSearchTerm(value);

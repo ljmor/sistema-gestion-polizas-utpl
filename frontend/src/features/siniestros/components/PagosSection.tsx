@@ -41,8 +41,7 @@ export const PagosSection = ({ siniestro, readOnly = false }: PagosSectionProps)
   const registrarPago = useRegistrarPagoYNotificar();
   const updateSiniestro = useUpdateSiniestro();
   
-  // Determinar si el caso está bloqueado
-  const isLocked = readOnly || siniestro.estado === EstadoSiniestro.CERRADO;
+  // Nota: readOnly se usa para control de UI
 
   // Helper para formatear fecha al formato YYYY-MM-DD para input type="date"
   const formatDateForInput = (date: string | Date | null | undefined): string => {
