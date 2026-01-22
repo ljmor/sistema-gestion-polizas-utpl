@@ -36,11 +36,10 @@ coverage/
 .DS_Store
 Thumbs.db
 
-# Uploaded files (sensitive)
-uploads/
-files/
-sensitive/
-storage/
+# Uploaded files (sensitive) - only at root level
+/uploads/
+/sensitive/
+/storage/
 
 # Database
 *.db
