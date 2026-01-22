@@ -48,10 +48,10 @@ export class MailService {
           // No fallar en certificados no válidos (útil para desarrollo)
           rejectUnauthorized: this.configService.get<string>('nodeEnv') === 'production',
         },
-        // Timeout settings
-        connectionTimeout: 10000,
-        greetingTimeout: 10000,
-        socketTimeout: 15000,
+        // Timeout settings (aumentados para servicios cloud)
+        connectionTimeout: 30000,
+        greetingTimeout: 30000,
+        socketTimeout: 60000,
       } as any;
 
       this.transporter = nodemailer.createTransport(transportConfig);
