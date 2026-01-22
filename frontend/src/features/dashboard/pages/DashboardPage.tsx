@@ -220,7 +220,7 @@ export const DashboardPage = () => {
                           </>
                         }
                       />
-                      {caso.diasRestantes60 < 15 && (
+                      {caso.diasRestantes60 !== null && caso.diasRestantes60 < 15 && (
                         <Chip
                           label={`${caso.diasRestantes60}d`}
                           color="error"

@@ -9,6 +9,16 @@ export interface DashboardKPIs {
   casosPorVencerReporte: number;
   liquidacionesPendientes: number;
   pagosPorEjecutar: number;
+  // Propiedades adicionales del backend
+  totalSiniestros: number;
+  siniestrosRecibidos: number;
+  siniestrosEnProceso: number;
+  siniestroCerrados: number;
+  alertasPendientes: number;
+  tasaCierre: number;
+  montoTotalLiquidado: number;
+  promedioLiquidacion: number;
+  totalPolizas: number;
 }
 
 export const useDashboardKPIs = () => {

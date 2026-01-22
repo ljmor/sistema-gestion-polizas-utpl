@@ -108,7 +108,7 @@ export const SiniestroKanban = ({ siniestros, onCardClick }: SiniestroKanbanProp
                         >
                           #{siniestro.caseCode}
                         </Typography>
-                        {siniestro.diasRestantes60 < 15 && (
+                        {siniestro.diasRestantes60 !== null && siniestro.diasRestantes60 < 15 && (
                           <Chip
                             label={`${siniestro.diasRestantes60}d`}
                             size="small"
