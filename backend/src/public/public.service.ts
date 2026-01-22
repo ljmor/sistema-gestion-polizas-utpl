@@ -106,8 +106,8 @@ export class PublicService {
     await this.notificarGestorNuevoCaso({
       caseCode,
       tipo: dto.tipo,
-      fallecidoNombre: dto.fallecidoNombre,
-      fallecidoCedula: dto.fallecidoCedula,
+      fallecidoNombre: dto.fallecidoNombre || 'No especificado',
+      fallecidoCedula: dto.fallecidoCedula || 'No especificada',
       reportanteNombre: dto.reportanteNombre,
       reportanteEmail: dto.reportanteEmail,
       reportanteTelefono: dto.reportanteTelefono,
