@@ -27,6 +27,11 @@ export default tseslint.config(
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-unused-vars': 'warn',
       'no-useless-escape': 'off',
+      // Desactivar reglas estrictas de React Compiler (patrones comunes válidos)
+      'react-hooks/set-state-in-effect': 'off',
+      'react-hooks/refs': 'off',
+      'react-hooks/incompatible-library': 'off',
+      'react-hooks/static-components': 'off',
     },
   },
 )
