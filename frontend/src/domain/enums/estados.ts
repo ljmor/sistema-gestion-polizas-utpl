@@ -31,9 +31,9 @@ export enum EstadoPago {
 }
 
 export enum EstadoLiquidacion {
-  ENVIADO = 'ENVIADO',
-  OBSERVADO = 'OBSERVADO',
-  APROBADO = 'APROBADO',
+  ENVIADO = 'ENVIADA',
+  OBSERVADO = 'OBSERVADA',
+  APROBADO = 'APROBADA',
 }
 
 export enum TipoAlerta {

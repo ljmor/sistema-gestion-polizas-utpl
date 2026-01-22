@@ -87,7 +87,7 @@ export class SiniestrosService {
       ...doc,
       // Construir URL del documento si tiene archivo asociado
       // Los archivos se guardan en uploads/documents
-      url: doc.file?.path ? `/uploads/documents/${doc.file.path}` : null,
+      url: doc.file?.path ? `/uploads/${doc.file.path}` : null,
       nombre: doc.file?.originalName || doc.tipo,
     }));
 
@@ -99,7 +99,7 @@ export class SiniestrosService {
         : 0,
       // URL del archivo de liquidación
       liquidacionUrl: siniestro.liquidacion.liquidacion?.path 
-        ? `/uploads/documents/${siniestro.liquidacion.liquidacion.path}` 
+        ? `/uploads/${siniestro.liquidacion.liquidacion.path}` 
         : null,
     } : null;
 
@@ -541,7 +541,7 @@ export class SiniestrosService {
 
     return {
       ...documento,
-      url: `/uploads/documents/${fileRecord.path}`,
+      url: `/uploads/${fileRecord.path}`,
     };
   }
 
@@ -834,11 +834,11 @@ export class SiniestrosService {
       fs.writeFileSync(filepath, archivo.buffer);
       archivoPath = filepath;
       
-      // Crear registro de File
+      // Crear registro de File - guardar path con directorio para consistencia
       const file = await this.prisma.file.create({
         data: {
           bucket: 'documents',
-          path: filename,
+          path: `documents/${filename}`,
           originalName: archivo.originalname,
           mimeType: archivo.mimetype,
           size: archivo.size,
@@ -846,7 +846,7 @@ export class SiniestrosService {
       });
       fileId = file.id;
       
-      this.logger.log(`Archivo de liquidación guardado: ${filename}`);
+      this.logger.log(`Archivo de liquidación guardado: documents/${filename}`);
     }
 
     // Crear o actualizar liquidación
@@ -894,17 +894,13 @@ export class SiniestrosService {
       });
     }
 
-    // Actualizar estado del siniestro según la liquidación
-    if (data.montoLiquidado || data.estado) {
-      const nuevoEstadoSiniestro = liquidacionData.estado === LiquidacionEstado.APROBADA 
-        ? SiniestroEstado.PAGO  // Si se aprueba, pasar a PAGO
-        : SiniestroEstado.LIQUIDACION; // Si solo se registra datos, quedarse en LIQUIDACION
-      
+    // Actualizar estado del siniestro - quedarse en LIQUIDACION hasta que se envíe a beneficiarios
+    if (data.montoLiquidado || data.fechaLiquidacion) {
       await this.prisma.siniestro.update({
         where: { id },
         data: { 
           fechaLiquidacion: data.fechaLiquidacion ? new Date(data.fechaLiquidacion) : undefined,
-          estado: nuevoEstadoSiniestro,
+          estado: SiniestroEstado.LIQUIDACION, // Siempre quedarse en LIQUIDACION
         },
       });
     }

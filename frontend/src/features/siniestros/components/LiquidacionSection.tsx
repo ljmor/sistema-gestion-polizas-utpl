@@ -66,7 +66,8 @@ export const LiquidacionSection = ({ siniestro }: LiquidacionSectionProps) => {
   const fueEnviadoAseguradora = !!siniestro.liquidacion?.fechaEnvioAseguradora;
   const estadoActual = siniestro.liquidacion?.estado || (fueEnviadoAseguradora ? 'EN_ESPERA' : null);
   const isAprobado = siniestro.liquidacion?.estado === EstadoLiquidacion.APROBADO;
-  const tieneRespuestaAseguradora = !!siniestro.liquidacion?.fechaLiquidacion && !!siniestro.liquidacion?.montoLiquidado;
+  // Tiene respuesta si hay monto liquidado registrado
+  const tieneRespuestaAseguradora = !!siniestro.liquidacion?.montoLiquidado;
   
   // Función para ver documentos
   const handleViewDocument = (url: string | undefined) => {
@@ -397,7 +398,7 @@ export const LiquidacionSection = ({ siniestro }: LiquidacionSectionProps) => {
           </Card>
         </Grid>
 
-        {/* Resumen y acciones */}
+        {/* Resumen y acciones - Mostrar cuando hay monto liquidado registrado */}
         {siniestro.liquidacion?.montoLiquidado && (
           <Grid size={{ xs: 12 }}>
             <Card>
@@ -408,13 +409,19 @@ export const LiquidacionSection = ({ siniestro }: LiquidacionSectionProps) => {
                     <Typography variant="h4" color="primary" fontWeight={700}>
                       {formatCurrency(siniestro.liquidacion.montoLiquidado)}
                     </Typography>
+                    {!isAprobado && (
+                      <Typography variant="caption" color="text.secondary">
+                        Marca como aprobada antes de enviar a beneficiarios
+                      </Typography>
+                    )}
                   </Box>
                   <Button
                     variant="contained"
+                    color="success"
                     startIcon={enviarLiquidacion.isPending ? <CircularProgress size={20} color="inherit" /> : undefined}
                     endIcon={!enviarLiquidacion.isPending ? <ArrowForward /> : undefined}
                     onClick={handleEnviarBeneficiarios}
-                    disabled={enviarLiquidacion.isPending || siniestro.liquidacion.estado === EstadoLiquidacion.APROBADO}
+                    disabled={enviarLiquidacion.isPending || !isAprobado}
                   >
                     {enviarLiquidacion.isPending ? 'Enviando notificaciones...' : 'Enviar a beneficiarios'}
                   </Button>

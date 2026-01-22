@@ -110,13 +110,16 @@ export const SiniestroDetailPage = () => {
   const displayData = siniestro || mockSiniestro;
   const [activeTab, setActiveTab] = useState(0); // Iniciar en Recepción
   const [reopenDialogOpen, setReopenDialogOpen] = useState(false);
+  const [initialTabSet, setInitialTabSet] = useState(false);
 
-  // Actualizar tab cuando se carguen los datos del siniestro
+  // Actualizar tab SOLO la primera vez que se cargan los datos
+  // NO cambiar automáticamente después (el usuario controla la navegación)
   useEffect(() => {
-    if (siniestro) {
+    if (siniestro && !initialTabSet) {
       setActiveTab(stepToTab[siniestro.estado]);
+      setInitialTabSet(true);
     }
-  }, [siniestro]);
+  }, [siniestro, initialTabSet]);
 
   if (isLoading) {
     return <LoadingState message="Cargando caso..." />;
@@ -155,7 +158,8 @@ export const SiniestroDetailPage = () => {
   
   // Condiciones para habilitar tabs progresivamente
   const canAccessLiquidacion = allDocsRecibidos && allFirmasRecibidas;
-  const canAccessPago = liquidacionAprobada || yaEnviadoABeneficiarios;
+  // PAGO solo se habilita DESPUÉS de enviar a beneficiarios (cuando el estado cambia a PAGO)
+  const canAccessPago = yaEnviadoABeneficiarios;
 
   const alerts = [];
   
