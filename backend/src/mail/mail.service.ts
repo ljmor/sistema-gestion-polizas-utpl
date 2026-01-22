@@ -1,6 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
+import * as SibApiV3Sdk from '@getbrevo/brevo';
+import * as fs from 'fs';
+import * as path from 'path';
 
 export interface SendMailOptions {
   to: string;
@@ -18,25 +21,48 @@ export interface SendMailOptions {
 export class MailService {
   private readonly logger = new Logger(MailService.name);
   private transporter: nodemailer.Transporter | null = null;
+  private brevoApi: SibApiV3Sdk.TransactionalEmailsApi | null = null;
   private readonly fromAddress: string;
+  private readonly fromEmail: string;
+  private readonly fromName: string;
   private readonly gestorEmail: string;
   private aseguradoraEmail: string;  // Mutable para actualización en runtime
   private aseguradoraNombre: string;  // Mutable para actualización en runtime
+  private useBrevoApi: boolean = false;
 
   constructor(private configService: ConfigService) {
     this.fromAddress = this.configService.get<string>('mail.from') || 'Sistema SGP <noreply@utpl.edu.ec>';
+    // Extraer email y nombre del fromAddress
+    const fromMatch = this.fromAddress.match(/^(.+?)\s*<(.+)>$/);
+    if (fromMatch) {
+      this.fromName = fromMatch[1].trim();
+      this.fromEmail = fromMatch[2].trim();
+    } else {
+      this.fromEmail = this.fromAddress;
+      this.fromName = 'Sistema SGP UTPL';
+    }
+    
     this.gestorEmail = this.configService.get<string>('gestor.email') || 'gestor@utpl.edu.ec';
     this.aseguradoraEmail = this.configService.get<string>('aseguradora.email') || 'seguros@aseguradora.com.ec';
     this.aseguradoraNombre = this.configService.get<string>('aseguradora.nombre') || 'Aseguradora';
 
+    // Primero intentar configurar Brevo API (preferido para producción)
+    const brevoApiKey = this.configService.get<string>('BREVO_API_KEY');
+    if (brevoApiKey) {
+      this.setupBrevoApi(brevoApiKey);
+    }
+
+    // También configurar SMTP como fallback
     const host = this.configService.get<string>('mail.host');
     const user = this.configService.get<string>('mail.user');
     const pass = this.configService.get<string>('mail.pass');
     const port = this.configService.get<number>('mail.port') || 587;
 
-    this.logger.log(`SMTP Config - Host: ${host || 'NOT SET'}, Port: ${port}, User: ${user ? user.substring(0, 5) + '***' : 'NOT SET'}`);
+    if (!this.useBrevoApi) {
+      this.logger.log(`SMTP Config - Host: ${host || 'NOT SET'}, Port: ${port}, User: ${user ? user.substring(0, 5) + '***' : 'NOT SET'}`);
+    }
 
-    if (host && user && pass) {
+    if (host && user && pass && !this.useBrevoApi) {
       // Configuración mejorada para diferentes proveedores
       const transportConfig: nodemailer.TransportOptions = {
         host,
@@ -58,9 +84,21 @@ export class MailService {
       
       // Verificar conexión al iniciar
       this.verifyConnection();
-    } else {
+    } else if (!this.useBrevoApi) {
       this.logger.warn('Mail transporter not configured - emails will be logged only');
-      this.logger.warn('Configure SMTP_HOST, SMTP_USER, and SMTP_PASS in .env to enable email sending');
+      this.logger.warn('Configure BREVO_API_KEY or SMTP_HOST, SMTP_USER, and SMTP_PASS in .env to enable email sending');
+    }
+  }
+
+  private setupBrevoApi(apiKey: string) {
+    try {
+      const apiInstance = new SibApiV3Sdk.TransactionalEmailsApi();
+      apiInstance.setApiKey(SibApiV3Sdk.TransactionalEmailsApiApiKeys.apiKey, apiKey);
+      this.brevoApi = apiInstance;
+      this.useBrevoApi = true;
+      this.logger.log('✅ Brevo API configured successfully (using HTTP API instead of SMTP)');
+    } catch (error: any) {
+      this.logger.error(`❌ Failed to configure Brevo API: ${error.message}`);
     }
   }
 
@@ -100,46 +138,120 @@ export class MailService {
 
   async sendMail(options: SendMailOptions): Promise<boolean> {
     try {
-      if (this.transporter) {
-        this.logger.log(`Attempting to send email to ${options.to}...`);
-        if (options.attachments && options.attachments.length > 0) {
-          this.logger.log(`   With ${options.attachments.length} attachment(s): ${options.attachments.map(a => a.filename).join(', ')}`);
-        }
-        
-        const info = await this.transporter.sendMail({
-          from: this.fromAddress,
-          to: options.to,
-          subject: options.subject,
-          html: options.html,
-          text: options.text,
-          attachments: options.attachments, // ¡IMPORTANTE: Pasar los attachments!
-        });
-        
-        this.logger.log(`✅ Email sent successfully to ${options.to}`);
-        this.logger.log(`   Subject: ${options.subject}`);
-        this.logger.log(`   Message ID: ${info.messageId}`);
-        if (options.attachments && options.attachments.length > 0) {
-          this.logger.log(`   Attachments: ${options.attachments.length} file(s)`);
-        }
-        if (info.response) {
-          this.logger.log(`   Server response: ${info.response}`);
-        }
-        return true;
-      } else {
-        // En desarrollo sin SMTP, solo logueamos el email
-        this.logger.log(`════════════════════════════════════════════════════════`);
-        this.logger.log(`📧 [DEV MODE - EMAIL NOT SENT]`);
-        this.logger.log(`   To: ${options.to}`);
-        this.logger.log(`   Subject: ${options.subject}`);
-        this.logger.log(`   Body preview: ${(options.text || options.html).substring(0, 150)}...`);
-        if (options.attachments && options.attachments.length > 0) {
-          this.logger.log(`   Attachments: ${options.attachments.map(a => a.filename).join(', ')}`);
-        }
-        this.logger.log(`════════════════════════════════════════════════════════`);
-        return true; // Retornamos true para no bloquear flujos en desarrollo
+      // Primero intentar con Brevo API (preferido para producción)
+      if (this.useBrevoApi && this.brevoApi) {
+        return await this.sendWithBrevoApi(options);
       }
+      
+      // Fallback a SMTP
+      if (this.transporter) {
+        return await this.sendWithSmtp(options);
+      }
+      
+      // En desarrollo sin ningún método configurado, solo logueamos el email
+      this.logger.log(`════════════════════════════════════════════════════════`);
+      this.logger.log(`📧 [DEV MODE - EMAIL NOT SENT]`);
+      this.logger.log(`   To: ${options.to}`);
+      this.logger.log(`   Subject: ${options.subject}`);
+      this.logger.log(`   Body preview: ${(options.text || options.html).substring(0, 150)}...`);
+      if (options.attachments && options.attachments.length > 0) {
+        this.logger.log(`   Attachments: ${options.attachments.map(a => a.filename).join(', ')}`);
+      }
+      this.logger.log(`════════════════════════════════════════════════════════`);
+      return true; // Retornamos true para no bloquear flujos en desarrollo
     } catch (error: any) {
       this.logger.error(`❌ Failed to send email to ${options.to}`);
+      this.logger.error(`   Error: ${error.message}`);
+      return false;
+    }
+  }
+
+  private async sendWithBrevoApi(options: SendMailOptions): Promise<boolean> {
+    if (!this.brevoApi) return false;
+
+    try {
+      this.logger.log(`[Brevo API] Sending email to ${options.to}...`);
+      
+      const sendSmtpEmail = new SibApiV3Sdk.SendSmtpEmail();
+      sendSmtpEmail.sender = { name: this.fromName, email: this.fromEmail };
+      sendSmtpEmail.to = [{ email: options.to }];
+      sendSmtpEmail.subject = options.subject;
+      sendSmtpEmail.htmlContent = options.html;
+      if (options.text) {
+        sendSmtpEmail.textContent = options.text;
+      }
+
+      // Manejar attachments
+      if (options.attachments && options.attachments.length > 0) {
+        sendSmtpEmail.attachment = await Promise.all(
+          options.attachments.map(async (att) => {
+            let content: string;
+            if (att.content) {
+              content = att.content.toString('base64');
+            } else if (att.path) {
+              const filePath = att.path.startsWith('/') ? att.path : path.join(process.cwd(), att.path);
+              if (fs.existsSync(filePath)) {
+                content = fs.readFileSync(filePath).toString('base64');
+              } else {
+                this.logger.warn(`Attachment file not found: ${filePath}`);
+                return null;
+              }
+            } else {
+              return null;
+            }
+            return { name: att.filename, content };
+          })
+        ).then(atts => atts.filter(a => a !== null) as Array<{ name: string; content: string }>);
+      }
+
+      const response = await this.brevoApi.sendTransacEmail(sendSmtpEmail);
+      
+      this.logger.log(`✅ [Brevo API] Email sent successfully to ${options.to}`);
+      this.logger.log(`   Subject: ${options.subject}`);
+      this.logger.log(`   Message ID: ${response.body?.messageId || 'N/A'}`);
+      if (options.attachments && options.attachments.length > 0) {
+        this.logger.log(`   Attachments: ${options.attachments.length} file(s)`);
+      }
+      return true;
+    } catch (error: any) {
+      this.logger.error(`❌ [Brevo API] Failed to send email: ${error.message}`);
+      if (error.response?.body) {
+        this.logger.error(`   Response: ${JSON.stringify(error.response.body)}`);
+      }
+      return false;
+    }
+  }
+
+  private async sendWithSmtp(options: SendMailOptions): Promise<boolean> {
+    if (!this.transporter) return false;
+
+    try {
+      this.logger.log(`[SMTP] Attempting to send email to ${options.to}...`);
+      if (options.attachments && options.attachments.length > 0) {
+        this.logger.log(`   With ${options.attachments.length} attachment(s): ${options.attachments.map(a => a.filename).join(', ')}`);
+      }
+      
+      const info = await this.transporter.sendMail({
+        from: this.fromAddress,
+        to: options.to,
+        subject: options.subject,
+        html: options.html,
+        text: options.text,
+        attachments: options.attachments,
+      });
+      
+      this.logger.log(`✅ [SMTP] Email sent successfully to ${options.to}`);
+      this.logger.log(`   Subject: ${options.subject}`);
+      this.logger.log(`   Message ID: ${info.messageId}`);
+      if (options.attachments && options.attachments.length > 0) {
+        this.logger.log(`   Attachments: ${options.attachments.length} file(s)`);
+      }
+      if (info.response) {
+        this.logger.log(`   Server response: ${info.response}`);
+      }
+      return true;
+    } catch (error: any) {
+      this.logger.error(`❌ [SMTP] Failed to send email to ${options.to}`);
       this.logger.error(`   Error: ${error.message}`);
       if (error.code) {
         this.logger.error(`   Error code: ${error.code}`);
@@ -155,7 +267,7 @@ export class MailService {
         this.logger.error(`   💡 For Gmail: Use App Password, not regular password`);
         this.logger.error(`   💡 For Brevo: Use SMTP key from settings`);
       }
-      return false;
+      throw error; // Re-throw para que sendMail maneje el error
     }
   }
 

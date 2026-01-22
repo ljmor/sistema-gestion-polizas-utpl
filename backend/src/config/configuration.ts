@@ -33,6 +33,9 @@ export default () => ({
     from: process.env.SMTP_FROM || 'Sistema SGP <noreply@utpl.edu.ec>',
   },
   
+  // Brevo API (alternativa a SMTP para producción en servicios cloud)
+  brevoApiKey: process.env.BREVO_API_KEY || '',
+  
   // Storage
   storage: {
     type: process.env.STORAGE_TYPE || 'local',
