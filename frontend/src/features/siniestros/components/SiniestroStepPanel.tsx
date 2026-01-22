@@ -79,7 +79,7 @@ export const SiniestroStepPanel = ({ step, siniestro }: SiniestroStepPanelProps)
         case 0:
           return <RecepcionPanel siniestro={siniestro} readOnly />;
         case 4:
-          return <PagosSection siniestro={siniestro} readOnly />;
+          return <PagosSection siniestro={siniestro} />;
         default:
           return <ClosedCaseMessage />;
       }

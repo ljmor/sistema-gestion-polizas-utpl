@@ -107,27 +107,14 @@ export const SiniestroDetailPage = () => {
   const displayData = siniestro || mockSiniestro;
   const initialTabRef = useRef(false);
   
-  // Calcular el tab inicial basado en el estado del siniestro
-  const getInitialTab = () => {
-    if (siniestro && !initialTabRef.current) {
-      initialTabRef.current = true;
-      return stepToTab[siniestro.estado];
-    }
-    return 0;
-  };
-  
-  const [activeTab, setActiveTab] = useState(getInitialTab);
+  const [activeTab, setActiveTab] = useState(0);
   const [reopenDialogOpen, setReopenDialogOpen] = useState(false);
 
-  // Actualizar tab cuando cambia el siniestro (solo si no se había cargado antes)
+  // Actualizar tab cuando cambia el siniestro (solo la primera vez)
   useEffect(() => {
     if (siniestro && !initialTabRef.current) {
       initialTabRef.current = true;
-      // Usar setTimeout para evitar el warning de setState síncrono
-      const timer = setTimeout(() => {
-        setActiveTab(stepToTab[siniestro.estado]);
-      }, 0);
-      return () => clearTimeout(timer);
+      setActiveTab(stepToTab[siniestro.estado]);
     }
   }, [siniestro]);
 

@@ -24,7 +24,6 @@ import { ConfirmDialog } from '../../../shared/components/ConfirmDialog';
 
 interface PagosSectionProps {
   siniestro: Siniestro;
-  readOnly?: boolean;
 }
 
 interface PagoForm {
@@ -33,15 +32,13 @@ interface PagoForm {
   obsFinanzas: string;
 }
 
-export const PagosSection = ({ siniestro, readOnly = false }: PagosSectionProps) => {
+export const PagosSection = ({ siniestro }: PagosSectionProps) => {
   const { enqueueSnackbar } = useSnackbar();
   const [comprobanteFile, setComprobanteFile] = useState<File[]>([]);
   const [cerrarDialogOpen, setCerrarDialogOpen] = useState(false);
 
   const registrarPago = useRegistrarPagoYNotificar();
   const updateSiniestro = useUpdateSiniestro();
-  
-  // Nota: readOnly se usa para control de UI
 
   // Helper para formatear fecha al formato YYYY-MM-DD para input type="date"
   const formatDateForInput = (date: string | Date | null | undefined): string => {
