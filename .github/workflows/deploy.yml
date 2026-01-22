@@ -1,0 +1,89 @@
+name: Deploy Pipeline
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  deploy-backend:
+    name: Deploy Backend
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    
+    defaults:
+      run:
+        working-directory: ./backend
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Generate Prisma Client
+        run: npx prisma generate
+      
+      - name: Build application
+        run: npm run build
+      
+      - name: Deploy to production
+        run: |
+          echo "Add your deployment commands here"
+          echo "Examples:"
+          echo "- Deploy to Render: render deploy"
+          echo "- Deploy to Heroku: git push heroku main"
+          echo "- Deploy to AWS/DigitalOcean: scp/rsync commands"
+          echo "- Deploy to Docker registry: docker build and push"
+        # Uncomment and configure based on your deployment target:
+        # env:
+        #   DEPLOY_TOKEN: ${{ secrets.DEPLOY_TOKEN }}
+        #   DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+
+  deploy-frontend:
+    name: Deploy Frontend
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    
+    defaults:
+      run:
+        working-directory: ./frontend
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Build application
+        run: npm run build
+        env:
+          VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
+      
+      - name: Deploy to production
+        run: |
+          echo "Add your deployment commands here"
+          echo "Examples:"
+          echo "- Deploy to Vercel: vercel --prod"
+          echo "- Deploy to Netlify: netlify deploy --prod"
+          echo "- Deploy to S3/CloudFront: aws s3 sync"
+        # Uncomment and configure based on your deployment target:
+        # env:
+        #   VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        #   NETLIFY_TOKEN: ${{ secrets.NETLIFY_TOKEN }}
