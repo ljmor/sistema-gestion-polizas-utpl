@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { MailService } from '../mail/mail.service';
 import { CreatePublicReportDto } from './dto/create-public-report.dto';
 import { SiniestroEstado, DocumentoEstado } from '@prisma/client';
 import * as fs from 'fs';
@@ -10,7 +11,10 @@ export class PublicService {
   private readonly logger = new Logger(PublicService.name);
   private readonly uploadsPath = './uploads/documents';
 
-  constructor(private prisma: PrismaService) {
+  constructor(
+    private prisma: PrismaService,
+    private mailService: MailService,
+  ) {
     // Asegurar que existe el directorio de uploads
     if (!fs.existsSync(this.uploadsPath)) {
       fs.mkdirSync(this.uploadsPath, { recursive: true });
@@ -98,12 +102,73 @@ export class PublicService {
 
     this.logger.log(`Caso ${caseCode} creado exitosamente`);
 
+    // Notificar al gestor por email
+    await this.notificarGestorNuevoCaso({
+      caseCode,
+      tipo: dto.tipo,
+      fallecidoNombre: dto.fallecidoNombre,
+      fallecidoCedula: dto.fallecidoCedula,
+      reportanteNombre: dto.reportanteNombre,
+      reportanteEmail: dto.reportanteEmail,
+      reportanteTelefono: dto.reportanteTelefono,
+      fechaDefuncion: dto.fechaDefuncion,
+      archivosAdjuntos: archivos?.length || 0,
+    });
+
     return {
       caseCode: siniestro.caseCode,
       id: siniestro.id,
       fechaReporte: siniestro.fechaReporte,
       archivosRecibidos: archivos?.length || 0,
     };
+  }
+
+  /**
+   * Notifica al gestor UTPL cuando se recibe un nuevo caso desde el portal público
+   */
+  private async notificarGestorNuevoCaso(data: {
+    caseCode: string;
+    tipo: string;
+    fallecidoNombre: string;
+    fallecidoCedula: string;
+    reportanteNombre: string;
+    reportanteEmail: string;
+    reportanteTelefono?: string;
+    fechaDefuncion?: string;
+    archivosAdjuntos: number;
+  }): Promise<void> {
+    try {
+      const tipoLabel = data.tipo === 'MUERTE_NATURAL' ? 'Muerte Natural' : 'Muerte por Accidente';
+      const fechaDefuncionStr = data.fechaDefuncion 
+        ? new Date(data.fechaDefuncion).toLocaleDateString('es-EC', { year: 'numeric', month: 'long', day: 'numeric' })
+        : 'No especificada';
+
+      await this.mailService.sendAlertToGestor({
+        tipo: 'Nuevo Caso Recibido',
+        severidad: 'INFO',
+        mensaje: `Se ha recibido un nuevo reporte de siniestro desde el portal público.
+        
+<strong>Datos del caso:</strong>
+• Código: <strong>${data.caseCode}</strong>
+• Tipo: ${tipoLabel}
+• Fallecido: ${data.fallecidoNombre} (${data.fallecidoCedula})
+• Fecha de defunción: ${fechaDefuncionStr}
+• Archivos adjuntos: ${data.archivosAdjuntos}
+
+<strong>Reportante:</strong>
+• Nombre: ${data.reportanteNombre}
+• Email: ${data.reportanteEmail}
+• Teléfono: ${data.reportanteTelefono || 'No proporcionado'}
+
+Por favor, revise el caso en el sistema para iniciar la gestión.`,
+        caseCode: data.caseCode,
+      });
+
+      this.logger.log(`Email de notificación enviado al gestor para caso ${data.caseCode}`);
+    } catch (error) {
+      // No fallar si el email no se puede enviar
+      this.logger.error(`Error al enviar notificación al gestor: ${error}`);
+    }
   }
 
   /**
