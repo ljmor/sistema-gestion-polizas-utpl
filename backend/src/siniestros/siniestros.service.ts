@@ -616,9 +616,14 @@ export class SiniestrosService {
       d => d.estado === DocumentoEstado.RECIBIDO && d.file
     );
     
+    this.logger.log(`Documentos con archivo: ${documentosConArchivo.length}`);
+    
     for (const doc of documentosConArchivo) {
       if (doc.file && doc.file.path) {
-        const filePath = path.resolve(this.uploadsPath, doc.file.path);
+        // El path ya incluye 'documents/...' así que lo resolvemos desde uploads/
+        const filePath = path.resolve('./uploads', doc.file.path);
+        
+        this.logger.log(`Buscando archivo: ${filePath}`);
         
         // Verificar que el archivo existe
         if (fs.existsSync(filePath)) {
@@ -626,14 +631,14 @@ export class SiniestrosService {
             filename: doc.file.originalName || `${doc.tipo}_${doc.id}.pdf`,
             path: filePath,
           });
-          this.logger.log(`Adjuntando documento del sistema: ${doc.file.originalName}`);
+          this.logger.log(`✓ Adjuntando documento: ${doc.file.originalName}`);
         } else {
-          this.logger.warn(`Archivo no encontrado: ${filePath}`);
+          this.logger.warn(`✗ Archivo no encontrado: ${filePath}`);
         }
       }
     }
 
-    this.logger.log(`Enviando expediente con ${attachments.length} archivo(s) adjunto(s)`);
+    this.logger.log(`📎 Total archivos a adjuntar: ${attachments.length}`);
 
     // Formatear fecha de defunción correctamente (evitando problemas de timezone)
     let fechaDefuncionFormateada = 'N/A';
@@ -647,19 +652,29 @@ export class SiniestrosService {
     }
 
     // Enviar email a la aseguradora con archivos adjuntos
-    const emailSent = await this.mailService.sendExpedienteToAseguradora({
-      caseCode: siniestro.caseCode,
-      fallecidoNombre: siniestro.fallecidoNombre || 'N/A',
-      fallecidoCedula: siniestro.fallecidoCedula || 'N/A',
-      fechaDefuncion: fechaDefuncionFormateada,
-      tipo: siniestro.tipo,
-      documentosAdjuntos: attachments.length,
-      observaciones: siniestro.observaciones || undefined,
-      attachments: attachments.length > 0 ? attachments : undefined,
-    });
+    let emailSent = false;
+    try {
+      this.logger.log(`📧 Iniciando envío a aseguradora para caso ${siniestro.caseCode}...`);
+      
+      emailSent = await this.mailService.sendExpedienteToAseguradora({
+        caseCode: siniestro.caseCode,
+        fallecidoNombre: siniestro.fallecidoNombre || 'N/A',
+        fallecidoCedula: siniestro.fallecidoCedula || 'N/A',
+        fechaDefuncion: fechaDefuncionFormateada,
+        tipo: siniestro.tipo,
+        documentosAdjuntos: attachments.length,
+        observaciones: siniestro.observaciones || undefined,
+        attachments: attachments.length > 0 ? attachments : undefined,
+      });
 
-    if (!emailSent) {
-      this.logger.warn(`No se pudo enviar email a aseguradora para ${siniestro.caseCode}`);
+      if (emailSent) {
+        this.logger.log(`✅ Email enviado exitosamente a aseguradora para ${siniestro.caseCode}`);
+      } else {
+        this.logger.warn(`⚠️ No se pudo enviar email a aseguradora para ${siniestro.caseCode}`);
+      }
+    } catch (error: any) {
+      this.logger.error(`❌ Error al enviar email a aseguradora: ${error.message}`);
+      this.logger.error(error.stack);
     }
 
     // Actualizar fecha de envío en el siniestro
