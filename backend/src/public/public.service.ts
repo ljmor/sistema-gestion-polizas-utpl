@@ -49,16 +49,20 @@ export class PublicService {
         // Usar el tipo especificado o detectar automáticamente
         const tipoDocumento = tiposDocumentos[i] || this.detectarTipoDocumento(archivo.originalname);
         
-        // Guardar archivo físico
-        const filename = `${siniestro.id}_${Date.now()}_${archivo.originalname}`;
-        const filepath = path.join(this.uploadsPath, filename);
+        // Guardar archivo físico en subdirectorio del siniestro
+        const siniestroDir = path.join(this.uploadsPath, siniestro.id);
+        if (!fs.existsSync(siniestroDir)) {
+          fs.mkdirSync(siniestroDir, { recursive: true });
+        }
+        const filename = `${tipoDocumento}_${Date.now()}_${archivo.originalname}`;
+        const filepath = path.join(siniestroDir, filename);
         fs.writeFileSync(filepath, archivo.buffer);
 
-        // Crear registro File
+        // Crear registro File - path incluye 'documents/{siniestroId}/' para consistencia con URLs
         const file = await this.prisma.file.create({
           data: {
             bucket: 'documents',
-            path: filename,
+            path: `documents/${siniestro.id}/${filename}`,
             originalName: archivo.originalname,
             mimeType: archivo.mimetype,
             size: archivo.size,
