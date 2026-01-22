@@ -29,6 +29,7 @@ export class MailService {
   private aseguradoraEmail: string;  // Mutable para actualización en runtime
   private aseguradoraNombre: string;  // Mutable para actualización en runtime
   private useBrevoApi: boolean = false;
+  private readonly frontendUrl: string;
 
   constructor(private configService: ConfigService) {
     this.fromAddress = this.configService.get<string>('mail.from') || 'Sistema SGP <noreply@utpl.edu.ec>';
@@ -45,6 +46,13 @@ export class MailService {
     this.gestorEmail = this.configService.get<string>('gestor.email') || 'gestor@utpl.edu.ec';
     this.aseguradoraEmail = this.configService.get<string>('aseguradora.email') || 'seguros@aseguradora.com.ec';
     this.aseguradoraNombre = this.configService.get<string>('aseguradora.nombre') || 'Aseguradora';
+    
+    // URL del frontend - usar CORS_ORIGINS (primera URL) o FRONTEND_URL
+    const corsOrigins = process.env.CORS_ORIGINS;
+    this.frontendUrl = process.env.FRONTEND_URL || (corsOrigins ? corsOrigins.split(',')[0].trim() : 'http://localhost:5173');
+    this.logger.log(`Frontend URL for emails: ${this.frontendUrl}`);
+    this.logger.log(`Gestor email: ${this.gestorEmail}`);
+    this.logger.log(`Aseguradora email: ${this.aseguradoraEmail}`);
 
     // Primero intentar configurar Brevo API (preferido para producción)
     const brevoApiKey = this.configService.get<string>('BREVO_API_KEY');
@@ -342,7 +350,7 @@ export class MailService {
             </div>
             ` : ''}
             <center>
-              <a href="${process.env.CORS_ORIGIN || 'http://localhost:5173'}/app/alertas" class="button">
+              <a href="${this.frontendUrl}/app/alertas" class="button">
                 Ver en el sistema →
               </a>
             </center>
@@ -514,13 +522,22 @@ Contacto: ${this.gestorEmail}
 ══════════════════════════════════════════════
     `;
 
-    return this.sendMail({
+    this.logger.log(`📧 Enviando expediente a aseguradora: ${this.aseguradoraEmail}`);
+    this.logger.log(`   Caso: ${data.caseCode}, Archivos: ${data.attachments?.length || 0}`);
+    
+    const result = await this.sendMail({
       to: this.aseguradoraEmail,
       subject: `[UTPL] Expediente de Siniestro - ${data.caseCode} - ${data.fallecidoNombre}`,
       html,
       text,
       attachments: data.attachments,
     });
+    
+    if (!result) {
+      this.logger.error(`❌ Falló el envío a aseguradora: ${this.aseguradoraEmail}`);
+    }
+    
+    return result;
   }
 
   /**
