@@ -378,7 +378,7 @@ export const ReportesPage = () => {
                         innerRadius={50}
                         dataKey="siniestrosCount"
                         nameKey="poliza"
-                        label={({ name, value }: { name: string; value: number }) => `${name}: ${value}`}
+                        label={({ name, value }: { name?: string; value?: number }) => `${name || ''}: ${value || 0}`}
                       >
                         {estadisticas.relacionPolizaSiniestros.map((_, index) => (
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
